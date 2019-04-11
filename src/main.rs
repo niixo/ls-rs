@@ -1,9 +1,14 @@
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::MetadataExt;
+use std::io::{BufWriter, stdout, Write};
 
 fn main() {
     let mut dir: Vec<_> = fs::read_dir(".").unwrap().map(|x| x.unwrap()).collect();
     dir.sort_by_key(|x| x.path());
+
+    let out = stdout();
+    let mut out = BufWriter::new(out.lock());
 
     for entry in dir {
         let meta = entry.metadata().unwrap();
@@ -24,12 +29,12 @@ fn main() {
         // 120 symlink
         // 100 file
         // 40 directory
-        println!(
-            "{}{} {}",
-            output,
-            format_permissions(mode),
-            entry.file_name().to_str().unwrap()
-        );
+        writeln!(out, "{}{} {:>7} {}",
+                 output,
+                 format_permissions(mode),
+                 fs::metadata(entry.path()).unwrap().size(),
+                 entry.file_name().to_str().unwrap()
+        ).unwrap();
     }
 }
 
